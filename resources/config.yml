@@ -1,0 +1,24 @@
+# ============ CSFreeze 配置文件 ============
+# 坐标点保存在 points 下, 编号范围 1-100
+# 白名单(主持人)保存在 whitelist 下, 白名单玩家不参与传送和冻结
+#
+# 坐标格式示例:
+# points:
+#   1:
+#     world: world
+#     x: 100.5
+#     y: 64.0
+#     z: 100.5
+#     yaw: 0.0
+#     pitch: 0.0
+#
+# 白名单格式示例:
+# whitelist:
+#   - steve
+#   - alex
+#
+# 也可以在游戏内用 /cs point <1-100> 设置坐标
+# 用 /cs whitelist add/remove <名字> 管理白名单
+# 注意: 在游戏内设置后, 本文件中的注释会被覆盖删除, 属正常现象
+points: {}
+whitelist: []
