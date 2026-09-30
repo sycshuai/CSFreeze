@@ -38,6 +38,8 @@ public class CSPlugin extends JavaPlugin implements CommandExecutor, Listener, T
     /** 已冻结的玩家: UUID -> 原始行走速度/飞行速度 */
     private final Map<UUID, float[]> frozen = new HashMap<>();
     private final Random random = new Random();
+    /** 解除冻结倒数任务ID, -1 表示没有进行中的倒数 */
+    private int jiechuTaskId = -1;
 
     @Override
     public void onEnable() {
@@ -50,6 +52,10 @@ public class CSPlugin extends JavaPlugin implements CommandExecutor, Listener, T
 
     @Override
     public void onDisable() {
+        if (jiechuTaskId != -1) {
+            getServer().getScheduler().cancelTask(jiechuTaskId);
+            jiechuTaskId = -1;
+        }
         unfreezeAll();
         getLogger().info("CSFreeze 插件已禁用, 已解除所有玩家冻结");
     }
@@ -97,8 +103,7 @@ public class CSPlugin extends JavaPlugin implements CommandExecutor, Listener, T
 
         if (sub.equals("jiechu")) {
             if (sender instanceof Player && !hasAdmin((Player) sender)) return true;
-            unfreezeAll();
-            Bukkit.broadcastMessage("§a已解除冻结, 所有玩家可以正常行动");
+            startJiechuCountdown();
             return true;
         }
 
@@ -194,7 +199,11 @@ public class CSPlugin extends JavaPlugin implements CommandExecutor, Listener, T
                     + " 名玩家, 剩余玩家不传送");
         }
 
-        // 先解除上次的冻结状态, 再重新开始
+        // 取消可能正在进行的解除倒数, 先解除上次的冻结状态, 再重新开始
+        if (jiechuTaskId != -1) {
+            getServer().getScheduler().cancelTask(jiechuTaskId);
+            jiechuTaskId = -1;
+        }
         unfreezeAll();
 
         for (int i = 0; i < count; i++) {
@@ -235,6 +244,27 @@ public class CSPlugin extends JavaPlugin implements CommandExecutor, Listener, T
                 frozen.remove(uuid);
             }
         }
+    }
+
+    /** /cs jiechu: 5 秒倒数后解除所有玩家冻结 */
+    private void startJiechuCountdown() {
+        if (jiechuTaskId != -1) {
+            getServer().getScheduler().cancelTask(jiechuTaskId);
+            jiechuTaskId = -1;
+        }
+        Bukkit.broadcastMessage("§e5 秒后解除所有玩家冻结!");
+        final int[] count = {5};
+        jiechuTaskId = getServer().getScheduler().scheduleSyncRepeatingTask(this, () -> {
+            if (count[0] > 1) {
+                count[0]--;
+                Bukkit.broadcastMessage("§e" + count[0] + " 秒后解除冻结!");
+            } else {
+                getServer().getScheduler().cancelTask(jiechuTaskId);
+                jiechuTaskId = -1;
+                unfreezeAll();
+                Bukkit.broadcastMessage("§a已解除冻结, 所有玩家可以正常行动");
+            }
+        }, 20L, 20L);
     }
 
     /** 从配置读取坐标点, 世界不存在则跳过 */
